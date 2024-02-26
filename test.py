@@ -77,14 +77,13 @@ class PolynomialRegression:
 
     def fit(self, step_size=0.0001, num_iterations=1000):
         for i in range(1, num_iterations):
-            step_size /= math.sqrt(i)
             gradient_matrix = self._get_gradient_matrix()
-            self.w0 += step_size * gradient_matrix[0]
-            self.w1 += step_size * gradient_matrix[1]
-            self.w2 += step_size * gradient_matrix[2]
-            self.w3 += step_size * gradient_matrix[3]
-            self.w4 += step_size * gradient_matrix[4]
-            self.w5 += step_size * gradient_matrix[5]
+            self.w0 -= step_size * gradient_matrix[0]
+            self.w1 -= step_size * gradient_matrix[1]
+            self.w2 -= step_size * gradient_matrix[2]
+            self.w3 -= step_size * gradient_matrix[3]
+            self.w4 -= step_size * gradient_matrix[4]
+            self.w5 -= step_size * gradient_matrix[5]
 
     def _show_coeffiecients(self):
         print(
@@ -92,14 +91,7 @@ class PolynomialRegression:
         )
 
     def predict(self, x):
-        y = (
-            self.w0
-            + self.w1 * x
-            + self.w2 * x * x
-            + self.w3 * x * x * x
-            + self.w4 * np.sin(x)
-            + self.w5 * np.cos(x)
-        )
+        y = self.w0 + self.w1 * x + self.w2 * x * x
         return y
 
 
@@ -108,7 +100,7 @@ x = [
     2,
     3,
 ]
-y = [2, 3, 2]
+y = [1, 2, 3]
 model = PolynomialRegression(x, y)
 model.fit(num_iterations=10000)
 
