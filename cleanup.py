@@ -1,6 +1,8 @@
 # used for cleaning and transforming the inputs inside the excel
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error
+
 import numpy as np
 import math
 
@@ -15,53 +17,34 @@ def weighted_moving_average(array, window=5):
     return np.convolve(array, weights, mode="valid")
 
 
-class LinearRegression:
-    def __init__(self, x_vector, y_vector):
-
-        self.x_vector = np.array(x_vector, dtype=np.float64)
-        self.y_vector = np.array(y_vector, dtype=np.float64)
-        self.w0 = 0
-        self.w1 = 0
-
-    def _get_predicted_value_matrix(self, x):
-        formula = lambda x: self.w0 + self.w1 * x
-        return formula(x)
-
-    def _get_gradient_matrix(self):
-        predictions = self._get_predicted_value_matrix(self.x_vector)
-        w0_hat = sum((self.y_vector - predictions))
-        w1_hat = sum((self.y_vector - predictions) * self.x_vector)
-
-        gradient_matrix = np.array([w0_hat, w1_hat])
-        gradient_matrix = -2 * gradient_matrix
-
-        return gradient_matrix
-
-    def fit(self, step_size=0.00001, num_iterations=500):
-        for i in range(1, num_iterations):
-            gradient_matrix = self._get_gradient_matrix()
-            self.w0 -= step_size * (gradient_matrix[0])
-            self.w1 -= step_size * (gradient_matrix[1])
-            self.show_coeffiecients()
-
-    def show_coeffiecients(self):
-        print(f"w0: {self.w0}\tw1: {self.w1}\t")
-
-    def predict(self, x):
-        y = self.w0 + self.w1 * x
-        return y
+def calculate_ema(data, alpha):
+    data = np.array(data)
+    ema = [data[0]]
+    for i in range(1, len(data)):
+        ema_temp = alpha * ema[i - 1] + (1 - alpha) * data[i]
+        ema.append(ema_temp)
+    return ema
 
 
-x = [x for x in range(-12, 12)]
-f = lambda x: 5 * x - 7
-y = [f(x_val) for x_val in x]
+df = pd.read_excel("cleaned_inputs.xlsx")
 
-model = LinearRegression(x, y)
-model.fit(num_iterations=200000)
+# without_noise = weighted_moving_average(df["400g Crystal"])
+# plt.plot(df.index, without_noise)
 
-model.show_coeffiecients()
+# residuals = df["400g Crystal"].to_numpy() - without_noise
 
-# plt.plot(x, y)
-# plt.plot(x, model.predict(np.array(x)))
-# model.show_coeffiecients()
-# plt.show()
+date_to_int = {date: i for i, date in enumerate(df.index.unique())}
+df["date_code"] = df.index.to_series().map(date_to_int)
+
+
+x = list(range(0, len(df["date_code"].to_list())))
+# y = without_noise.tolist()
+# y_pred = calculate_ema(df["400g Crystal"].to_list(), 0.5)
+
+
+# alpha = find_optimal_alpha(x, y)
+plt.plot(x, np.log10(df["400g Crystal"].to_numpy()))
+
+# plt.plot(x, y_pred)
+
+plt.show()
