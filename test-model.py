@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 class PolynomialRegression:
     def __init__(self, x_vector, y_vector):
-        self.x_vector = np.array(x_vector)
-        self.y_vector = np.array(y_vector)
+        self.x_vector = np.array(x_vector, dtype=np.float64)
+        self.y_vector = np.array(y_vector, dtype=np.float64)
 
         self.w0 = 0
         self.w1 = 0
@@ -15,8 +15,8 @@ class PolynomialRegression:
         self.w3 = 0
         self.epsilon = 1
 
-        self.m = 0.5
-        self.v = 0.5
+        self.m = 0.25
+        self.v = 0.25
 
         self.momentum = np.zeros(4)
         self.velocity = np.zeros(4)
@@ -57,7 +57,7 @@ class PolynomialRegression:
 
         return gradient_matrix
 
-    def fit(self, step_size=0.01, num_iterations=100000):
+    def fit(self, step_size=1, num_iterations=100000):
         self.step_size = step_size
         for _ in range(1, num_iterations):
             self._update_momentum()
@@ -91,14 +91,37 @@ class PolynomialRegression:
         return y
 
 
-x = list(range(-50, 50))
-f = lambda x: 3 * x + 7
-y = [f(x_val) for x_val in x]
+y = [
+    451,
+    326,
+    319,
+    398,
+    427,
+    396,
+    309,
+    483,
+    162,
+    600,
+    190,
+    737,
+    699,
+    124,
+]
+x = list(range(1, len(y) + 1))
+
 model = PolynomialRegression(x, y)
-model.fit(num_iterations=10000)
+model.fit(num_iterations=100000)
 
 plt.plot(x, y, label="Actual")
 plt.plot(x, model.predict(np.array(x)), label="Predict")
-plt.legend()
-model._show_coeffiecients()
+# plt.legend()
+# model._show_coeffiecients()
 plt.show()
+# np.set_printoptions(suppress=True, precision=3)
+
+# pred = model.predict(np.array([1000, -1500, -9635, 9635], dtype=np.float64))
+# test = np.array([f(x_val) for x_val in [1000, -1500, -9635, 9635]], dtype=np.float64)
+# accuracy = 1 - (sum((test - pred) ** 2) / sum((test - test.mean()) ** 2))
+# print(np.array_str(pred, precision=3, suppress_small=True))
+# print(np.array_str(test, precision=3, suppress_small=True))
+# print(accuracy)
