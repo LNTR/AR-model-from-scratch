@@ -66,6 +66,6 @@ class AutoCorrelationCalculator:
         return self.collerations
 
 
-acf = AutoCorrelationCalculator(data, 10)
-acf.calculate_acf(7)
+acf = AutoCorrelationCalculator(data)
+acf.calculate_acf(10)
 print(acf.get_acf_vector())
