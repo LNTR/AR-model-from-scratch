@@ -1,111 +1,126 @@
 import numpy as np
 import pandas as pd
-import math
 import matplotlib.pyplot as plt
 
 
-# Assumption : Since there's a possible seasonality and complex trend, assumed that the polynomial function is in the form
-# y=w0 + w1.x + w2.x.x + w3.x.x.x + w4.sin(x) + w5.cos(x)
+class AR:
+    def __init__(self, y_vector):
+        self.start_index = 2
+        self.y_vector = np.array(y_vector, dtype=np.float64)
+        self.error_vector = np.array([0, 0], dtype=np.float64)
 
+        self.index_vector = np.arange(self.start_index, len(self.y_vector))
 
-def weighted_moving_average(a, window=3):
-    weights = [(1 / window) for _ in range(1, window + 1)]
-    return np.convolve(a, weights, mode="valid")
+        self.c = 0
+        self.r1 = 0
+        self.r2 = 0
+        self.r3 = 0
 
+        self.epsilon = 1
 
-class PolynomialRegression:
-    def __init__(self, x_vector, y_vector):
-        self.x_vector = np.array(x_vector)
-        self.y_vector = np.array(y_vector)
+        self.m = 0.25
+        self.v = 0.25
 
-        self.w0 = 1
-        self.w1 = 1
-        self.w2 = 1
-        self.w3 = 1
-        self.w4 = 1
-        self.w5 = 1
+        self.momentum = np.zeros(4)
+        self.velocity = np.zeros(4)
 
-        self.l1 = 0
-        self.tollerance = 0.00001
-
-    def set_l1(self, l1):
-        self.l1 = l1
-
-    def _get_predicted_value_matrix(self, x):
-        formula = (
-            lambda x: self.w0
-            + self.w1 * x
-            + self.w2 * x * x
-            + self.w3 * x * x * x
-            + self.w4 * np.sin(x)
-            + self.w5 * np.cos(x)
-        )
-        return formula(x)
+    def _get_predicted_value(self, index):
+        y = self.r1 * self.y_vector[index - 1] + self.r1 * self.y_vector[index - 1]
+        return y
 
     def _get_gradient_matrix(self):
+        predicted_value_vector = []
+        for index in self.index_vector:
+            predicted_value_vector.append(self._get_predicted_value(index))
+
         gradient_matrix = [
-            sum((self.y_vector - self._get_predicted_value_matrix(self.x_vector))),
+            sum((self.y_vector[self.start_index :] - predicted_value_vector)),
             sum(
-                (self.y_vector - self._get_predicted_value_matrix(self.x_vector))
-                * self.x_vector
+                (self.y_vector[self.start_index :] - predicted_value_vector)
+                * self.y_vector[self.start_index - 1 : len(self.y_vector) - 1]
             ),
             sum(
-                (self.y_vector - self._get_predicted_value_matrix(self.x_vector))
-                * (self.x_vector**2)
-            ),
-            sum(
-                (self.y_vector - self._get_predicted_value_matrix(self.x_vector))
-                * (self.x_vector**3)
-            ),
-            sum(
-                (self.y_vector - self._get_predicted_value_matrix(self.x_vector))
-                * np.cos(self.x_vector)
-            ),
-            sum(
-                (
-                    self.y_vector
-                    - self._get_predicted_value_matrix(self.x_vector)
-                    * np.sin(self.x_vector)
-                    * (-1)
-                )
+                (self.y_vector[self.start_index :] - predicted_value_vector)
+                * (self.y_vector[self.start_index - 2 : len(self.y_vector) - 2])
             ),
         ]
 
-        gradient_matrix = np.array(gradient_matrix) * -2
+        gradient_matrix = np.array(gradient_matrix, dtype=np.float64) * -2
 
         return gradient_matrix
 
-    def fit(self, step_size=0.0001, num_iterations=1000):
-        for i in range(1, num_iterations):
-            gradient_matrix = self._get_gradient_matrix()
-            self.w0 -= step_size * gradient_matrix[0]
-            self.w1 -= step_size * gradient_matrix[1]
-            self.w2 -= step_size * gradient_matrix[2]
-            self.w3 -= step_size * gradient_matrix[3]
-            self.w4 -= step_size * gradient_matrix[4]
-            self.w5 -= step_size * gradient_matrix[5]
+    def fit(self, step_size=0.001, num_iterations=100000):
+        self.step_size = step_size
+        self.error_vector = np.array([0, 0], dtype=np.float64)
+
+        for _ in range(1, num_iterations):
+            self._update_momentum()
+            self._update_velocity()
+            self.c -= (
+                self.step_size
+                * self.momentum[0]
+                / (self.epsilon + np.sqrt(self.velocity[0]))
+            )
+            self.r1 -= (
+                self.step_size
+                * self.momentum[1]
+                / (self.epsilon + np.sqrt(self.velocity[1]))
+            )
+            self.r2 -= (
+                self.step_size
+                * self.momentum[2]
+                / (self.epsilon + np.sqrt(self.velocity[2]))
+            )
 
     def _show_coeffiecients(self):
-        print(
-            f"w0: {self.w0}\nw1: {self.w1}\nw2: {self.w2}\nw3: {self.w3}\nw4: {self.w4}\nw5: {self.w5}\n"
-        )
+        print(f"c: {self.c}\tr1: {self.r1}\tr2: {self.r2}\t\t")
 
-    def predict(self, x):
-        y = self.w0 + self.w1 * x + self.w2 * x * x
-        return y
+    def view_inside(self):
+        y_vals = self._get_predicted_value(self.index_vector)
+        return y_vals
+
+    def _get_current_weigts(self):
+        return np.array([self.c, self.r1, self.r2])
+
+    def _update_momentum(self):
+        gradient_matrix = self._get_gradient_matrix()
+        self.momentum = self.v * self.momentum + (1 - self.v) * gradient_matrix
+
+    def _update_velocity(self):
+        gradient_matrix = self._get_gradient_matrix()
+        self.velocity = self.v * self.velocity + (1 - self.v) * (gradient_matrix**2)
 
 
-x = [
-    1,
-    2,
-    3,
+class MA:
+    pass
+
+
+y = [
+    451,
+    326,
+    319,
+    398,
+    427,
+    396,
+    309,
+    483,
+    162,
+    600,
+    190,
+    737,
+    699,
+    124,
 ]
-y = [1, 2, 3]
-model = PolynomialRegression(x, y)
-model.fit(num_iterations=10000)
 
+model = AR(np.log10(y))
+model.fit(num_iterations=100000)
+inside = model.view_inside()
+inside = np.power(10, inside[3:])
+y = np.array(y[5:])
 
-plt.plot(x, y)
-plt.plot(x, model.predict(np.array(x)))
-
+print(y)
+print(inside[3:])
+plt.plot(y, label="Actual")
+plt.plot(inside, label="Predict")
+plt.legend()
 plt.show()
