@@ -65,7 +65,11 @@ class AutoCorrelationCalculator:
     def get_acf_vector(self):
         return self.collerations
 
+    def get_max_acf_indices(self, n):
+        n *= -1
+        last_n_sorted = np.argpartition(np.abs(self.collerations), n)
+        return last_n_sorted[n:]
 
-acf = AutoCorrelationCalculator(data)
-acf.calculate_acf(10)
-print(acf.get_acf_vector())
+    def get_max_acf_values(self, n):
+        indices = self.get_max_acf_indices(n)
+        return self.collerations[indices]
