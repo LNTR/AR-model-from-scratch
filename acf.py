@@ -1,34 +1,4 @@
 import numpy as np
-from matplotlib import pyplot as plt
-
-data = [
-    451,
-    326,
-    319,
-    398,
-    427,
-    396,
-    309,
-    483,
-    162,
-    368,
-    200,
-    190,
-    737,
-    699,
-    124,
-    683,
-    284,
-    554,
-    223,
-    471,
-    221,
-    566,
-    577,
-    546,
-    327,
-    589,
-]
 
 
 class AutoCorrelationCalculator:
